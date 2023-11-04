@@ -36,8 +36,8 @@ class Dog(BaseModel):
 def dog_kind(dog:Dog):
     return dog.kind
 class Timestamp(BaseModel):
-    id: str
-    timestamp: str
+    id: int
+    timestamp: int
 
 
 dogs_db = {
