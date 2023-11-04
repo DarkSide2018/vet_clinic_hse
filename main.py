@@ -1,8 +1,13 @@
 from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union, Any
+
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from fastapi import FastAPI
+from starlette import status
+from starlette.responses import JSONResponse
+
 app = FastAPI()
 
 
@@ -28,9 +33,11 @@ class Dog(BaseModel):
     kind: DogType
 
 
+def dog_kind(dog:Dog):
+    return dog.kind
 class Timestamp(BaseModel):
-    id: int
-    timestamp: int
+    id: str
+    timestamp: str
 
 
 dogs_db = {
@@ -48,61 +55,79 @@ post_db = [
     Timestamp(id=1, timestamp=10)
 ]
 
-
-@app.get('/#-datamodel-code-generator-#-root-#-special-#', response_model=Any)
-def root__get() -> Any:
-    """
-    Root
-    """
-    pass
-
-
 @app.get(
     '/dog', response_model=List[Dog], responses={'422': {'model': HTTPValidationError}}
 )
 def get_dogs_dog_get(
         kind: Optional[DogType] = None,
-) -> Union[List[Dog], HTTPValidationError]:
-    """
-    Get Dogs
-    """
-    pass
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(
+            dogs_db
+        ))
 
 
 @app.post('/dog', response_model=Dog, responses={'422': {'model': HTTPValidationError}})
-def create_dog_dog_post(body: Dog) -> Union[Dog, HTTPValidationError]:
-    """
-    Create Dog
-    """
-    pass
+def create_dog_dog_post(body: Dog) -> JSONResponse:
+    key = dogs_db.__len__()
+    dogs_db[key+1] = body
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(
+         body
+        ))
+
 
 
 @app.get(
     '/dog/{pk}', response_model=Dog, responses={'422': {'model': HTTPValidationError}}
 )
 def get_dog_by_pk_dog__pk__get(pk: int) -> Union[Dog, HTTPValidationError]:
-    """
-    Get Dog By Pk
-    """
-    pass
+    return dogs_db[pk]
 
-
+@app.get(
+    '/dog/type/{kind}', response_model=List[Dog], responses={'422': {'model': HTTPValidationError}}
+)
+def get_dogs_by_type(kind: str) -> JSONResponse:
+    filtered = []
+    for dog in dogs_db.values():
+        if dog.kind == kind:
+            filtered.append(dog)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(
+         filtered
+        ))
 @app.patch(
     '/dog/{pk}', response_model=Dog, responses={'422': {'model': HTTPValidationError}}
 )
 def update_dog_dog__pk__patch(
         pk: int, body: Dog
 ) -> Union[Dog, HTTPValidationError]:
-    """
-    Update Dog
-    """
-    pass
+    dogs_db[pk] = body
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(
+         dogs_db
+        ))
 
 
 @app.post('/post', response_model=Timestamp)
 def get_post_post_post(body:Timestamp) -> Timestamp:
     post_db.append(body)
     return body
+
+
+@app.get('/post_all', response_model=Timestamp)
+def get_all_posts() -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(
+         post_db
+        ))
+
+
 
 @app.get('/')
 def root():
